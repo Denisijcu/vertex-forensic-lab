@@ -1,0 +1,65 @@
+# Vertex Forensic Lab v1.3 — despliegue aislado en Docker
+# Requiere E:\vertex-forensic-lab\.env con VERTEX_CANARY_SECRET (lo genera Start-VertexLab.ps1)
+#
+# Subred 10.88.0.0/24 elegida para NO solaparse con la red NAT de WSL (172.28.48.0/20 en este host).
+
+services:
+  # =====================================================================
+  # 1. CÁMARA DE DETONACIÓN Y SENSOR FORENSE (FASTAPI + TARPIT + CANARY)
+  # =====================================================================
+  forensic-honeypot:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: vertex_forensic_target
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./forensic_vault:/app/vault
+    environment:
+      - ENVIRONMENT=FORENSIC_LAB
+      - DB_PATH=/app/vault/telemetry.duckdb
+      - VERTEX_CANARY_SECRET=${VERTEX_CANARY_SECRET:?Define VERTEX_CANARY_SECRET en .env (ejecuta Start-VertexLab.ps1)}
+      # El HUD del host llega al contenedor por el gateway del bridge
+      - VERTEX_ADMIN_ALLOWED_CIDRS=10.88.0.1/32
+    networks:
+      forensic_net:
+        ipv4_address: 10.88.0.10
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=64M
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+
+  # =====================================================================
+  # 2. EMULADOR DE ENJAMBRE DE AGENTES (SIMULADOR DE ATAQUE)
+  # =====================================================================
+  agent-simulator:
+    build:
+      context: ./simulator
+      dockerfile: Dockerfile
+    container_name: vertex_agent_sim
+    depends_on:
+      - forensic-honeypot
+    environment:
+      - TARGET_URL=http://10.88.0.10:8000
+    networks:
+      forensic_net:
+        ipv4_address: 10.88.0.20
+    security_opt:
+      - no-new-privileges:true
+    profiles: ["attack"]
+
+networks:
+  forensic_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.88.0.0/24
+          gateway: 10.88.0.1

@@ -1,0 +1,36 @@
+# Bóveda Forense e Informes (Evidencia sensible)
+forensic_vault/*.duckdb
+forensic_vault/*.duckdb.wal
+forensic_vault/reports/*.md
+
+# Actas forenses generadas por el HUD (contienen IPs y evidencia)
+reports/
+
+# Libro: ficha comercial y artefactos de compilación
+libro/kdp-ficha.md
+libro/build/
+libro/build_epub/
+
+# Entornos Virtuales y Cachés de Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# Compilación PyInstaller y Empaquetado
+build/
+dist/
+.release_staging/
+*.zip
+
+# Dependencias y Caché de Angular 19
+frontend/node_modules/
+frontend/.angular/
+frontend/dist/
+
+# Variables de entorno y configuraciones de IDE
+.env
+.vscode/
+.idea/
